@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Engine</title>
+  <!-- Add stylesheet here -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+  <style>
+    .categories {
+      display: flex;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: bold;
+      font-color: black;
+      background-color: cyan;
+      padding: 40px;
+    }
+
+    .categories a {
+      margin-left: 5%;
+      color: white;
+    }
+
+    .search-form {
+      margin-top: 2%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .form-control {
+      width: 900px;
+      height: 50px;
+      font-size: 22px;
+    }
+
+    .btn {
+      height: 50px;
+      font-size: 22px;
+    }
+
+    h2 {
+      padding-top: 1%;
+      padding-bottom: 2%;
+      text-align: center;
+    }
+
+    li {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 5%;
+      list-style-type: none;
+      font-size: 20px;
+    }
+
+    .result {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .dropdown-menu {
+      position: relative;
+    }
+
+    .dropdown-menu::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      right: 10px;
+      border-width: 0 10px 10px;
+      border-style: solid;
+      border-color: transparent transparent white;
+    }
+
+    .pagination-container {
+      margin: 10px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .current_category {
+      color: blue !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="categories">
+    <a class="current_category" href="{{ url_for('index') }}" style="margin-left: 0px;">Search</a>
+    <a href="{{ url_for('top_keywords') }}">Top keywords</a>
+    <a href="{{ url_for('top_similar')}}">Top-k Similar</a>
+  </div>
+
+  <form class="search-form" method="post" action="/search">
+    <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="query">
+    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+  </form>
+
+  <h2>Search Results for "{{ query }}"</h2>
+  <div class="container">
+    {% for i in range(results|length) %}
+    <div class="result">
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenu{{i}}" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          &#8942;
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenu{{i}}">
+          <a class="dropdown-item" href="#">Action 1</a>
+          <a class="dropdown-item" href="#">Action 2</a>
+          <a class="dropdown-item" href="#">Action 3</a>
+        </div>
+      </div>
+      <a href="{{results[i].url}}" target="_blank">{{results[i].title}}</a>
+      <p>{{results[i].snippet}}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Add JavaScript code here -->
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.6.0/js/bootstrap.min.js" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      var dropdownToggles = document.getElementsByClassName("dropdown-toggle");
+
+      for (var i = 0; i < dropdownToggles.length; i++) {
+        dropdownToggles[i].addEventListener("click", function() {
+          var dropdownMenu = this.nextElementSibling;
+
+          if (dropdownMenu.style.display === "block") {
+            dropdownMenu.style.display = "none";
+          } else {
+            dropdownMenu.style.display = "block";
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
