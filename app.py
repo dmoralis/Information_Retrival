@@ -198,6 +198,18 @@ def search_results():
         return render_template('search_results.html', lsa=lsa_value, query=query, results=['Δεν βρέθηκαν ομιλίες'], values=[], names=[]
                                , dates=[], page='0', num_pages='0')
 
+@app.route('/produce_summary', methods=['GET', 'POST'])
+def produce_summary():
+    data = request.get_json()
+    action = data.get('action')
+    context = data.get('context')
+
+    print(f'Action {action} Context {context}')
+    summary = manager.summary(context, max_length=100)
+    print(f'Context after summary {context}')
+    # Return a response if necessary
+    response = {'result': summary.strip('"')}
+    return jsonify(response)
 
 
 if __name__ == '__main__':
