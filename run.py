@@ -218,7 +218,7 @@ class EngineManager:
         return top_k[:k]
 
 
-    def summary(self, text):
+    def summary(self, text, max_length=512):
         from transformers import pipeline
 
         # translator = pipeline("translation", "Helsinki-NLP/opus-mt-grk-en")
@@ -233,15 +233,16 @@ class EngineManager:
             translation = translator(segment, max_length=512)[0]["translation_text"]
             translated_text += translation
         t2 = time.time()
-        print(f'translated to eng {translated_text}')
-        summarized_text = summarizer(translated_text, min_length=100, max_length=200)[0]['summary_text']
+        #print(f'translated to eng {translated_text}')
+        summarized_text = summarizer(translated_text, min_length=30, max_length=max_length)[0]['summary_text']
         t3 = time.time()
-        print(f'summarized eng {summarized_text}')
+        #print(f'summarized eng {summarized_text}')
         greek_text = translator_el(summarized_text)[0]["translation_text"]
         t4 = time.time()
-        print(f'greek text \n {greek_text} length {len(greek_text)}')
+        #print(f'greek text \n {greek_text} length {len(greek_text)}')
+        print(f'Length before {len(text)} Lenght after {len(greek_text)}')
         print(f'EL-TO-EN TIME : {t2 - t1}s SUMMARY TIME: {t3 - t2}s EN-TO-EL: {t4 - t3}s')
-
+        return greek_text
 if __name__ == '__main__':
     manager = EngineManager()
     #manager.construct()
