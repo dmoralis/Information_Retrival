@@ -27,9 +27,9 @@ class EngineManager:
             self.id_to_offset = pickle.load(open('inverted_catalog/inverted_offsets.pkl', "rb"))
 
     def construct(self):
-        '''t1 = time.time()
+        t1 = time.time()
         create_pre_processed_file("Greek_Parliament_Proceedings_1989_2020.csv",
-        processed_file_name="processed_speeches.csv", limit=10000)
+        processed_file_name="processed_speeches.csv", limit=-1)
         print(f'Preprocess done')
         t2 = time.time()
         create_inverted_catalog_file("processed_speeches.csv", "inverted_catalog/inverted_catalog.txt")
@@ -43,7 +43,7 @@ class EngineManager:
         print(f'Top-k Calculated')
         create_lsa(tfdf_per_speech="group/tfidf_per_speech.pkl")
         print(f'LSA Created')
-        t6 = time.time()'''
+        t6 = time.time()
         create_clusters("lsa/svd_matrix.pkl", calculate_clusters=True, n=80)
         #print(f'Clusters Created')
         #t7 = time.time()
@@ -220,40 +220,41 @@ class EngineManager:
 
     def summary(self, text, max_length=512):
         from transformers import pipeline
-
+        import re
+        
         # translator = pipeline("translation", "Helsinki-NLP/opus-mt-grk-en")
         translator = pipeline("translation", "Helsinki-NLP/opus-mt-grk-en")
         summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
         translator_el = pipeline("translation", model="Helsinki-NLP/opus-mt-en-el")
-
+    
         translated_text = ""
-        segments = [text[i:i + 480] for i in range(0, len(text), 480)]
+        text = text.replace('"','').replace("'",'')
+        text = re.split(r'\.(?!\d)', text)
+        text_length = len(text)
         t1 = time.time()
-        for segment in segments:
-            translation = translator(segment, max_length=512)[0]["translation_text"]
-            translated_text += translation
+        dot_char=''
+        for i, sentence in enumerate(text):
+            translated_text += dot_char + translator(sentence, max_length=512)[0]["translation_text"]
+            dot_char='.'
         t2 = time.time()
-        #print(f'translated to eng {translated_text}')
-        summarized_text = summarizer(translated_text, min_length=30, max_length=max_length)[0]['summary_text']
+        summarized_text = summarizer(translated_text, min_length=int(text_length/2), max_length=int(text_length/1.5))[0]['summary_text']
         t3 = time.time()
-        #print(f'summarized eng {summarized_text}')
         greek_text = translator_el(summarized_text)[0]["translation_text"]
         t4 = time.time()
-        #print(f'greek text \n {greek_text} length {len(greek_text)}')
-        print(f'Length before {len(text)} Lenght after {len(greek_text)}')
+        print(f"Length before {text_length} Lenght after {len(greek_text.split(' '))}")
         print(f'EL-TO-EN TIME : {t2 - t1}s SUMMARY TIME: {t3 - t2}s EN-TO-EL: {t4 - t3}s')
         return greek_text
 if __name__ == '__main__':
     manager = EngineManager()
     #manager.construct()
-    manager.summary('''Η τεχνητή νοημοσύνη (ΤΝ) αναδύεται ως μια από τις πιο επαναστατικές και επηρεαστικές τεχνολογίες των τελευταίων δεκαετιών. Οι επιπτώσεις της ΤΝ στην κοινωνία είναι ευρείας κλίμακας και πολυδιάστατες, καθιστώντας την ένα θέμα ενδιαφέροντος και συζήτησης. Παρακάτω, θα εξετάσουμε μερικές από τις κύριες επιπτώσεις της ΤΝ στην κοινωνία.
-        Στον τομέα της απασχόλησης, η ΤΝ έχει ήδη αρχίσει να επηρεάζει τις αγορές εργασίας. Οι αυτοματοποιημένες διαδικασίες και οι ρομποτικές τεχνολογίες έχουν ήδη αντικαταστήσει ορισμένες εργασίες που παλαιότερα διεκπεραιώνονταν από ανθρώπους. Αυτό δημιουργεί ανησυχίες για τη μελλοντική απασχόληση και την ανισότητα στην πρόσβαση στην απασχόληση.
-        Η ΤΝ επηρεάζει επίσης την υγεία και την ιατρική. Η ανάπτυξη αλγορίθμων μηχανικής μάθησης και το βαθύ μάθημα έχουν επιφέρει σημαντική πρόοδο σε πεδία όπως η ανίχνευση ασθενειών, η διάγνωση και οι θεραπευτικές προσεγγίσεις. Οι αλγόριθμοι μηχανικής μάθησης μπορούν να αναλύσουν μεγάλες ποσότητες δεδομένων και να αναγνωρίσουν πρότυπα και τάσεις που είναι δύσκολο να ανιχνευθούν από τον ανθρώπινο εγκέφαλο.
-        Αυτό επιτρέπει στους ιατρούς να έχουν πιο ακριβείς διαγνώσεις και να επιλέξουν την κατάλληλη θεραπεία για τον κάθε ασθενή.
-        Επιπλέον, η ΤΝ έχει επίσης επιδράσει στην κοινωνία μέσω των αλληλεπιδράσεων με τους ανθρώπους. Οι εικονικοί βοηθοί και οι ρομποτικές συσκευές παίζουν σημαντικό ρόλο στην καθημερινή ζωή, παρέχοντας υπηρεσίες όπως η ενημέρωση, η ψυχαγωγία και η βοήθεια σε ηλικιωμένους και ανθρώπους με αναπηρία. Αυτή η αλληλεπίδραση με την ΤΝ ανοίγει νέους τρόπους επικοινωνίας και αλληλεπίδρασης με τεχνητούς συνομιλητές, προσφέροντας μια πιο εξατομικευμένη εμπειρία για τον χρήστη.
-        Ωστόσο, η ΤΝ έχει επίσης προκαλέσει ανησυχίες και διλήμματα.
-        Η θέση της στην προστασία της ιδιωτικότητας και των δεδομένων αποτελεί ένα σημαντικό ζήτημα.
-        Η συλλογή και ανάλυση μεγάλων ποσοτήτων προσωπικών δεδομένων μπορεί να δημιουργήσει ανησυχίες για την ανεπάρκεια των μέτρων προστασίας και την πιθανότητα κατάχρησης των πληροφοριών.''')
+    #manager.summary('''Η τεχνητή νοημοσύνη (ΤΝ) αναδύεται ως μια από τις πιο επαναστατικές και επηρεαστικές τεχνολογίες των τελευταίων δεκαετιών. Οι επιπτώσεις της ΤΝ στην κοινωνία είναι ευρείας κλίμακας και πολυδιάστατες, καθιστώντας την ένα θέμα ενδιαφέροντος και συζήτησης. Παρακάτω, θα εξετάσουμε μερικές από τις κύριες επιπτώσεις της ΤΝ στην κοινωνία.
+    #    Στον τομέα της απασχόλησης, η ΤΝ έχει ήδη αρχίσει να επηρεάζει τις αγορές εργασίας. Οι αυτοματοποιημένες διαδικασίες και οι ρομποτικές τεχνολογίες έχουν ήδη αντικαταστήσει ορισμένες εργασίες που παλαιότερα διεκπεραιώνονταν από ανθρώπους. Αυτό δημιουργεί ανησυχίες για τη μελλοντική απασχόληση και την ανισότητα στην πρόσβαση στην απασχόληση.
+    #    Η ΤΝ επηρεάζει επίσης την υγεία και την ιατρική. Η ανάπτυξη αλγορίθμων μηχανικής μάθησης και το βαθύ μάθημα έχουν επιφέρει σημαντική πρόοδο σε πεδία όπως η ανίχνευση ασθενειών, η διάγνωση και οι θεραπευτικές προσεγγίσεις. Οι αλγόριθμοι μηχανικής μάθησης μπορούν να αναλύσουν μεγάλες ποσότητες δεδομένων και να αναγνωρίσουν πρότυπα και τάσεις που είναι δύσκολο να ανιχνευθούν από τον ανθρώπινο εγκέφαλο.
+    #    Αυτό επιτρέπει στους ιατρούς να έχουν πιο ακριβείς διαγνώσεις και να επιλέξουν την κατάλληλη θεραπεία για τον κάθε ασθενή.
+    #    Επιπλέον, η ΤΝ έχει επίσης επιδράσει στην κοινωνία μέσω των αλληλεπιδράσεων με τους ανθρώπους. Οι εικονικοί βοηθοί και οι ρομποτικές συσκευές παίζουν σημαντικό ρόλο στην καθημερινή ζωή, παρέχοντας υπηρεσίες όπως η ενημέρωση, η ψυχαγωγία και η βοήθεια σε ηλικιωμένους και ανθρώπους με αναπηρία. Αυτή η αλληλεπίδραση με την ΤΝ ανοίγει νέους τρόπους επικοινωνίας και αλληλεπίδρασης με τεχνητούς συνομιλητές, προσφέροντας μια πιο εξατομικευμένη εμπειρία για τον χρήστη.
+    #    Ωστόσο, η ΤΝ έχει επίσης προκαλέσει ανησυχίες και διλήμματα.
+    #    Η θέση της στην προστασία της ιδιωτικότητας και των δεδομένων αποτελεί ένα σημαντικό ζήτημα.
+    #    Η συλλογή και ανάλυση μεγάλων ποσοτήτων προσωπικών δεδομένων μπορεί να δημιουργήσει ανησυχίες για την ανεπάρκεια των μέτρων προστασίας και την πιθανότητα κατάχρησης των πληροφοριών.''')
 # manager.get_speech(0)
 # manager.get_speech(1)
 # manager.get_speech(3)
