@@ -228,9 +228,9 @@ class EngineManager:
         translator_el = pipeline("translation", model="Helsinki-NLP/opus-mt-en-el")
     
         translated_text = ""
+        text_length = len(text.split(' '))
         text = text.replace('"','').replace("'",'')
-        text = re.split(r'\.(?!\d)', text)
-        text_length = len(text)
+        text = re.split(r'\.(?!\d)', text
         t1 = time.time()
         dot_char=''
         for i, sentence in enumerate(text):
