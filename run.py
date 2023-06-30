@@ -45,11 +45,11 @@ class EngineManager:
         print(f'LSA Created')
         t6 = time.time()
         create_clusters("lsa/svd_matrix.pkl", calculate_clusters=True, n=80)
-        #print(f'Clusters Created')
-        #t7 = time.time()
-        #print(
-        #    f'Create Groups:{t4 - t3}\nCreate top-k similar:{t5 - t4}'
-        #    f'\nCreate lsa:{t6 - t5}\nCreate Clusters{t7 - t6}\nTotal time:{t7 - t1}s')
+        print(f'Clusters Created')
+        t7 = time.time()
+        print(
+            f'Create Groups:{t4 - t3}\nCreate top-k similar:{t5 - t4}'
+            f'\nCreate lsa:{t6 - t5}\nCreate Clusters{t7 - t6}\nTotal time:{t7 - t1}s')
 
     def calculate_idf(self, total_doc, term_n):
         return log(1 + total_doc / term_n)
@@ -91,51 +91,42 @@ class EngineManager:
         return attr[:length], scores[:length]
 
     def query_search(self, query):
-        
         t1 = time.time()
         # Load dictionaries
         with open('inverted_catalog/inverted_catalog.txt', "r", encoding='utf8') as inverted_catalog:
             inverted_catalog_index = pickle.load(open('inverted_catalog/inverted_offsets.pkl', "rb"))
             doc_lengths = pickle.load(open('inverted_catalog/doc_lengths.pkl', "rb"))
             t2 = time.time()
-            # Preprocess query and get keywords
+            # Preprocess query and get keywords.
             query = preprocess_text(query)
-            ##print(f'Query {query}')
             keywords = query.split(' ')
-            ##print(f'keyowrds {keywords}')
             total_doc = len(inverted_catalog_index)
-            #print(f'Dict {inverted_catalog_index}\n Keywords {keywords}')
             doc_rankings = defaultdict(float)
 
+            # Calculate top-k docs for query based on inverted catalog and theory formula.
             for term in keywords:
                 if inverted_catalog_index.get(term, -1) != -1:
                     offset = inverted_catalog_index[term]
-                    ##print(f'Offset {offset}')
                     inverted_catalog.seek(offset)
                     term_line = inverted_catalog.readline().split(',')
-                    ##print(f'Term line {term_line}')
-                    # print(f'Term line {term_line}')
                     _, term_n, doc_and_frequency = term_line[0], term_line[1], term_line[2:]
                     idf = self.calculate_idf(total_doc, int(term_n))
 
                     for i in range(0, len(doc_and_frequency), 2):
                         doc_id = int(doc_and_frequency[i])
                         doc_freq = int(doc_and_frequency[i + 1])
-                        #print(f'doc_id {doc_id} doc_freq {doc_freq}')
-                        # if doc_id not in doc_rankings.keys():
-                        #    doc_rankings[doc_id] = 0
 
                         tf_td = self.calculate_tf(doc_freq)
 
                         doc_rankings[doc_id] += tf_td * idf
 
+            # Divide based by length.
             for doc_id, score in doc_rankings.items():
                 doc_rankings[doc_id] = score / int(doc_lengths[doc_id])
-            #print(sorted(doc_rankings.items(), key=lambda x: x[1], reverse=True)[:20])
 
             doc_rankings = dict(sorted(doc_rankings.items(), key=lambda x: x[1], reverse=True))
 
-            # print(f'Doc rankings {doc_rankings}')
+
 
             t3 = time.time()
         t4 = time.time()
@@ -149,11 +140,11 @@ class EngineManager:
             line = file.readline()
         return line
 
+    # Testing method.
     def top_keywords(self, name, category="Member"):
-
         top_keyword_dict = None
         top_keyword_per_year_dict = None
-
+        # Select the correct dictionary based on user's choise.
         if category.lower() == "member":
             top_keyword_dict = pickle.load(open('group/member_keywords_all_time.pkl', "rb"))
             top_keyword_per_year_dict = pickle.load(open('group/member_keywords_per_year.pkl', "rb"))
@@ -164,55 +155,34 @@ class EngineManager:
             # keyword_dict = pickle.load(open('group/'))
             print('dummy')
 
+        # Check if the selected entity exists 
         if top_keyword_dict.get(name, 0):
             top_keywords = top_keyword_dict[name][:10]
             top_keyword_per_year_dict = top_keyword_per_year_dict[name]
-            #print(top_keywords)
-            #print(top_keyword_per_year_dict)
         else:
             print(f'{category} {name} not found\n Try one of these: {top_keyword_dict.keys()}')
-
-    '''def search_lsa(self, query):
-        query = preprocess_text(query)
-
-        svd_matrix = pickle.load(open('lsa/svd_matrix.pkl', "rb"))
-        Vt = pickle.load(open('lsa/Vt.pkl', "rb"))
-        transformer = pickle.load(open('transformer/transformer.pkl', "rb"))
-
-        query = transformer.transform([query])
-        query = query @ Vt.T
-
-        similarity_scores = cosine_similarity(query, svd_matrix)
-
-        most_similar_ids = similarity_scores.argsort()[:, :][0]
-
-        print(most_similar_ids)
-
-        return self.get_speeches(most_similar_ids)'''
 
     def search_lsa(self, query):
         query = preprocess_text(query)
 
+        # Convert Query to SVD matrix.
         svd_matrix = pickle.load(open('lsa/svd_matrix.pkl', "rb"))
         Vt = pickle.load(open('lsa/Vt.pkl', "rb"))
         transformer = pickle.load(open('transformer/transformer.pkl', "rb"))
-
         query = transformer.transform([query])
         query = query @ Vt.T[:, :60]
 
+        # Compare to the document matrix with cosine similarity.
         similarity_scores = cosine_similarity(query, svd_matrix)
 
-        # Get the indices of the most similar documents
+        # Get the indices of the most similar documents.
         most_similar_ids = similarity_scores.argsort()[0][::-1]
-        # Get the similarity scores of the most similar documents
+        # Get the similarity scores of the most similar documents.
         similarity_scores = similarity_scores[0][most_similar_ids]
-
-        # Create a list of tuples containing the document ids and their similarity scores
-        # results = [(self.get_speech_id(most_similar_ids[i]), similarity_scores[i]) for i in
-        #           range(len(most_similar_ids))]
 
         return self.filter_results(self.get_speeches(most_similar_ids), similarity_scores)
 
+    # Load the top-k pairs from the constructed array.
     def top_k_pairs(self, k=5):
         top_k = pickle.load(open('similarity/top_k_pairs.pkl', "rb"))
         return top_k[:k]
@@ -247,19 +217,4 @@ class EngineManager:
 if __name__ == '__main__':
     manager = EngineManager()
     #manager.construct()
-    #manager.summary('''Η τεχνητή νοημοσύνη (ΤΝ) αναδύεται ως μια από τις πιο επαναστατικές και επηρεαστικές τεχνολογίες των τελευταίων δεκαετιών. Οι επιπτώσεις της ΤΝ στην κοινωνία είναι ευρείας κλίμακας και πολυδιάστατες, καθιστώντας την ένα θέμα ενδιαφέροντος και συζήτησης. Παρακάτω, θα εξετάσουμε μερικές από τις κύριες επιπτώσεις της ΤΝ στην κοινωνία.
-    #    Στον τομέα της απασχόλησης, η ΤΝ έχει ήδη αρχίσει να επηρεάζει τις αγορές εργασίας. Οι αυτοματοποιημένες διαδικασίες και οι ρομποτικές τεχνολογίες έχουν ήδη αντικαταστήσει ορισμένες εργασίες που παλαιότερα διεκπεραιώνονταν από ανθρώπους. Αυτό δημιουργεί ανησυχίες για τη μελλοντική απασχόληση και την ανισότητα στην πρόσβαση στην απασχόληση.
-    #    Η ΤΝ επηρεάζει επίσης την υγεία και την ιατρική. Η ανάπτυξη αλγορίθμων μηχανικής μάθησης και το βαθύ μάθημα έχουν επιφέρει σημαντική πρόοδο σε πεδία όπως η ανίχνευση ασθενειών, η διάγνωση και οι θεραπευτικές προσεγγίσεις. Οι αλγόριθμοι μηχανικής μάθησης μπορούν να αναλύσουν μεγάλες ποσότητες δεδομένων και να αναγνωρίσουν πρότυπα και τάσεις που είναι δύσκολο να ανιχνευθούν από τον ανθρώπινο εγκέφαλο.
-    #    Αυτό επιτρέπει στους ιατρούς να έχουν πιο ακριβείς διαγνώσεις και να επιλέξουν την κατάλληλη θεραπεία για τον κάθε ασθενή.
-    #    Επιπλέον, η ΤΝ έχει επίσης επιδράσει στην κοινωνία μέσω των αλληλεπιδράσεων με τους ανθρώπους. Οι εικονικοί βοηθοί και οι ρομποτικές συσκευές παίζουν σημαντικό ρόλο στην καθημερινή ζωή, παρέχοντας υπηρεσίες όπως η ενημέρωση, η ψυχαγωγία και η βοήθεια σε ηλικιωμένους και ανθρώπους με αναπηρία. Αυτή η αλληλεπίδραση με την ΤΝ ανοίγει νέους τρόπους επικοινωνίας και αλληλεπίδρασης με τεχνητούς συνομιλητές, προσφέροντας μια πιο εξατομικευμένη εμπειρία για τον χρήστη.
-    #    Ωστόσο, η ΤΝ έχει επίσης προκαλέσει ανησυχίες και διλήμματα.
-    #    Η θέση της στην προστασία της ιδιωτικότητας και των δεδομένων αποτελεί ένα σημαντικό ζήτημα.
-    #    Η συλλογή και ανάλυση μεγάλων ποσοτήτων προσωπικών δεδομένων μπορεί να δημιουργήσει ανησυχίες για την ανεπάρκεια των μέτρων προστασίας και την πιθανότητα κατάχρησης των πληροφοριών.''')
-# manager.get_speech(0)
-# manager.get_speech(1)
-# manager.get_speech(3)
-
-# manager.query_search('Ο Ελληνικός λαός δεν θα πεινάσει. Πεινάς ρε;')
-# manager.top_keywords('δημοκρατικη ανανεωση', 'Party')
-# manager.top_k_pairs(k=5)
-# manager.search_lsa('Ο Ελληνικός λαός δεν θα πεινάσει. Πεινάς ρε;')
+    
