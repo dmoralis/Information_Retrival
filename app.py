@@ -88,17 +88,8 @@ def get_keywords():
         else:
             dict = []
 
-
-
-        '''results = []
-        for result in all_results:
-            if int(result[1]) == int(selected_field3):
-                print(f'Found {result[1]}')
-                results = result[0]
-                break'''
     results = results.split(',')
     keywords = []
-    #values = []
     for i in range(0, len(results), 2):
         keywords.append([results[i], round(float(results[i+1]),2)])
     print(keywords)
@@ -125,44 +116,6 @@ def search():
     lsa_enabled = request.form.get('lsa_enabled')
     print(f'lsa enabled {lsa_enabled}')
     return redirect(url_for('search_results', lsa=lsa_enabled, query=query, page='1'))
-
-'''@app.route('/search', methods=['GET', 'POST'])
-def search():
-    query = request.form.get('query')
-    if not query:
-        return render_template('base.html')
-
-    return redirect(url_for('search_results', query=query, page='1'))'''
-
-
-#def top_k_keywords():
-#@app.route('/search_results_lsa', methods=['GET', 'POST'])
-'''def search_results_lsa():
-    query = request.args.get('query')
-    page = int(request.args.get('page'))
-    lsa_value = request.args.get('lsa')
-    print(f'Query {query}')
-
-    # Make a request to the search engine API with the query
-    speeches, values = manager.search_lsa(query)
-    if speeches:
-        total_length = len(speeches)
-        print(f'Total length {total_length}')
-        speeches = np.array(speeches[(page-1)*10:page*10])
-        values = values[(page - 1) * 10:page * 10]
-
-        names = speeches[:, 1]
-        dates = speeches[:, 2]
-        speeches = speeches[:, 0]
-        num_pages = total_length // 10
-        if total_length % 10:
-            num_pages += 1
-
-        return render_template('search_results.html', lsa=lsa_value, query=query, results=speeches, values=values, names=names,
-                               dates=dates, page=str(page), num_pages=str(num_pages))
-    else:
-        return render_template('search_results.html', lsa=lsa_value, query=query, results=['Δεν βρέθηκαν ομιλίες'], values=[], names=[]
-                               , dates=[], page='0', num_pages='0')'''
 
 @app.route('/search_results', methods=['GET', 'POST'])
 def search_results():
